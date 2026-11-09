@@ -29,6 +29,7 @@ function App() {
 
   const [selectedCourse, setSelectedCourse] = useState('All Courses');
   const [selectedYear, setSelectedYear] = useState('All Years');
+  const [deleteId, setDeleteId] = useState(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -235,38 +236,62 @@ function App() {
   }
 
   // Delete student
-  async function handleDelete(id) {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this student?'
-    );
+async function handleDelete(id) {
+  try {
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'DELETE',
+    });
 
-    if (!confirmed) return;
+    const data = await response.json();
 
-    try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to delete student.');
-      }
-
-      await loadStudents();
-
-      showToast(
-        'Student deleted successfully!',
-        'success'
-      );
-    } catch (err) {
-      showToast(err.message, 'error');
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to delete student.');
     }
+
+    await loadStudents();
+    setDeleteId(null);
+
+    showToast('Student deleted successfully!', 'success');
+  } catch (err) {
+    setDeleteId(null);
+    showToast(err.message, 'error');
   }
+}
 
   return (
     <div className="app-layout">
+     {deleteId !== null && (
+  <div className="delete-modal-overlay">
+    <div className="delete-modal">
+      <div className="delete-modal-icon">
+        !
+      </div>
 
+      <h2>Delete Student?</h2>
+
+      <p>
+        Are you sure you want to delete this student?
+        This action cannot be undone.
+      </p>
+
+      <div className="delete-modal-actions">
+        <button
+          className="cancel-delete-btn"
+          onClick={() => setDeleteId(null)}
+        >
+          Cancel
+        </button>
+
+        <button
+          className="confirm-delete-btn"
+          onClick={() => handleDelete(deleteId)}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       {/* Toast Notification */}
       {toast && (
         <div
@@ -515,7 +540,7 @@ function App() {
 
                           <button
                             className="delete-button"
-                            onClick={() => handleDelete(student.id)}
+                            onClick={() => setDeleteId(student.id)}
                           >
                             Delete
                           </button>
